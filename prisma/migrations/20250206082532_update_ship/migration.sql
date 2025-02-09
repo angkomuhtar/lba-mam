@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `Ship` ADD COLUMN `dozer` VARCHAR(191) NULL,
+    ADD COLUMN `loader` VARCHAR(191) NULL,
+    ADD COLUMN `mechanic` VARCHAR(191) NULL;

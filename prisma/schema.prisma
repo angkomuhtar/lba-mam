@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id            String          @id @default(cuid())
+  fullname      String
+  nickname      String
+  type          String
+  phone         String?
+  status        String          @default("ready")
+  last_work     DateTime?       @default(now())
+  userId        String?         @unique
+  user          User?           @relation(fields: [userId], references: [id])
+  Ship_operator Ship_operator[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ship {
+  id            String          @id @default(cuid())
+  name          String
+  start_date    DateTime
+  end_date      DateTime
+  capacity      Int             @default(0)
+  loading_point String
+  pbm           String
+  foreman       String?
+  mechanic      String?
+  loader        String?
+  dozer         String?
+  status        String          @default("loading")
+  Ship_operator Ship_operator[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ship_operator {
+  id        String  @id @default(cuid())
+  isrental  Boolean @default(false)
+  type      String
+  shipId    String
+  profileId String
+  nama      String?
+  phone     String?
+  status    String  @default("pending")
+  profile   Profile @relation(fields: [profileId], references: [id])
+  ship      Ship    @relation(fields: [shipId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId], map: "Ship_operator_profileId_fkey")
+  @@index([shipId], map: "Ship_operator_shipId_fkey")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String?   @unique
+  email         String?   @unique
+  emailVerified DateTime?
+  password      String?
+  roles         String    @default("user")
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  profile       Profile?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String  @unique
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User?   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
