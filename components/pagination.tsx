@@ -25,9 +25,8 @@ const Pagination = ({
 
     replace(`${pathname}?${params.toString()}`);
   }, 300);
-  console.log(currentPage, totalPage);
   return (
-    <div className='flex items-center justify-end space-x-2 py-4'>
+    <div className='flex items-center justify-center md:justify-end space-x-2 py-4'>
       <Button
         variant='outline'
         size='sm'

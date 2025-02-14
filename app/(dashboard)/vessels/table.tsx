@@ -1,13 +1,6 @@
+"use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableHeader,
@@ -16,75 +9,114 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { getVessel } from "@/lib/action/data";
-import {
-  BadgeAlert,
-  BellRing,
-  HardHat,
-  Loader,
-  MoreHorizontal,
-} from "lucide-react";
+import { CheckCircle, Pencil, Trash } from "lucide-react";
 import moment from "moment";
-import React from "react";
+import React, { useState } from "react";
 import Pagination from "@/components/pagination";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import DeleteButton from "@/components/delete-button";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
+import { delVessel, fetchShips } from "@/lib/hooks";
+import { FuelCell, OptCell } from "../../../components/cells";
+import AddFuel from "@/components/add-fuel";
+import { useSearchParams } from "next/navigation";
+import VesselFormEdit from "@/components/vessel-form-edit";
+import { updateStatusShip } from "@/lib/action/data";
 
-const OptTable = async ({
-  search = "",
-  page = 1,
-}: {
-  search?: string;
-  page?: number;
-}) => {
-  const {
-    data: operator,
-    totalData,
-    currentPage,
-    totalPage,
-  } = await getVessel({
-    where: {
-      AND: [
-        {
-          name: {
-            contains: search,
-          },
-        },
-      ],
-    },
-    orderBy: {},
-    page: page,
-    perPage: 20,
+type vessel = {
+  id: string;
+  name: string;
+  start_date: Date | undefined;
+  pbm: string;
+  foreman: string;
+  mechanic: string;
+  loader: string;
+  dozer: string;
+  muatan: string;
+  posisi: string;
+  end_date: Date | undefined;
+};
+
+const OptTable = () => {
+  const searchParams = useSearchParams();
+  const perPage = "20";
+  const QueryClient = useQueryClient();
+  const page = searchParams.get("page") || "1";
+  const search = searchParams.get("query") || "";
+  const [open, setOpen] = useState(false);
+  const [dataEdit, setDataEdit] = useState<
+    Omit<vessel, "start_date" | "end_date"> & {
+      start_date: Date;
+      end_date?: Date;
+    }
+  >({
+    id: "",
+    name: "",
+    start_date: new Date(),
+    pbm: "",
+    foreman: "",
+    mechanic: "",
+    loader: "",
+    dozer: "",
+    muatan: "",
+    posisi: "",
+    end_date: undefined,
   });
 
-  console.log(operator);
+  const { data: operator } = useQuery({
+    queryKey: ["ships", { page, search, perPage }],
+    queryFn: fetchShips,
+  });
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: delVessel,
+    onSuccess: () => {
+      QueryClient.invalidateQueries({ queryKey: ["ships"] });
+      toast({
+        title: "Success",
+        description: "data berhasil dihapus",
+      });
+    },
+  });
+
+  const updateSts = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      updateStatusShip(id, status),
+    onSuccess: (data) => {
+      console.log(data);
+
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ["ships"] });
+        toast({
+          title: "Success",
+          description: "data berhasil Di update",
+        });
+      } else {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "terjadi kesalahan saat update data",
+        });
+      }
+    },
+  });
+  const handleEdit = (data: vessel) => {
+    setDataEdit({
+      id: data.id,
+      name: data.name,
+      start_date: data.start_date || new Date(),
+      pbm: data.pbm,
+      foreman: data.foreman ?? "",
+      mechanic: data.mechanic ?? "",
+      loader: data.loader ?? "",
+      dozer: data.dozer ?? "",
+      muatan: data.muatan ?? "",
+      posisi: data.posisi,
+      end_date: data.end_date,
+    });
+    setOpen(true);
+  };
 
   return (
     <>
@@ -99,125 +131,52 @@ const OptTable = async ({
             <TableHead>Muatan</TableHead>
             <TableHead>Posisi</TableHead>
             <TableHead>Tanggal Mulai</TableHead>
-            <TableHead>Tannggal Selesai</TableHead>
+            <TableHead>Tanggal Selesai</TableHead>
             <TableHead>Hari Kerja</TableHead>
+            <TableHead>BBM</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className='text-right'>Action</TableHead>
+            <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {operator.length > 0 ? (
-            operator.map((data) => (
+          {operator?.data && operator?.data?.length > 0 ? (
+            operator.data.map((data) => (
               <TableRow key={data.id} className='hover:bg-gray-100'>
-                <TableCell className='font-medium'>{data.name}</TableCell>
+                <TableCell className='font-medium text-nowrap'>
+                  {data.name}
+                </TableCell>
                 <TableCell>{data.mechanic}</TableCell>
                 <TableCell>{data.pbm}</TableCell>
                 <TableCell>{data.foreman}</TableCell>
                 <TableCell>
-                  <Drawer>
-                    <DrawerTrigger asChild>
-                      <Button variant='outline'>{`${data.dozer}D/${data.loader}L`}</Button>
-                    </DrawerTrigger>
-                    <DrawerTitle></DrawerTitle>
-                    <DrawerContent>
-                      <div className='mx-auto w-full max-w-4xl grid gap-4 py-4 md:grid-cols-2'>
-                        <Card className='self-start'>
-                          <CardHeader>
-                            <CardTitle>Dozer</CardTitle>
-                            <CardDescription>
-                              {data.dozer ? parseInt(data.dozer) * 2 : 0}{" "}
-                              Operator
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className='grid gap-4'>
-                            <div>
-                              {data.Ship_operator.map((operator, index) => {
-                                if (operator.type == "D")
-                                  return (
-                                    <div
-                                      className=' flex items-center space-x-4 p-3'
-                                      key={index}>
-                                      <HardHat />
-                                      <div className='flex-1 space-y-1'>
-                                        <p className='text-xs font-medium leading-none'>
-                                          {operator.profile.nickname}
-                                        </p>
-                                        <p className='text-xs text-muted-foreground'>
-                                          {` ${operator.profile.phone} - ${
-                                            operator.type == "D"
-                                              ? "Dozer"
-                                              : "Loader"
-                                          }`}
-                                        </p>
-                                      </div>
-                                      <div className='flex space-x-2'>
-                                        <div className='flex gap-1 items-center p-2 rounded-sm border border-red-500 text-xs font-semibold text-red-500'>
-                                          <BadgeAlert size={16} />
-                                          <span>{operator.status}</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
-                        <Card className='self-start'>
-                          <CardHeader>
-                            <CardTitle>Loader</CardTitle>
-                            <CardDescription>
-                              {data.loader ? parseInt(data.loader) * 2 : 0}{" "}
-                              Operator
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className='grid gap-4'>
-                            <div>
-                              {data.Ship_operator.map((operator, index) => {
-                                if (operator.type == "L")
-                                  return (
-                                    <div
-                                      className=' flex items-center space-x-4 p-3'
-                                      key={index}>
-                                      <HardHat />
-                                      <div className='flex-1 space-y-1'>
-                                        <p className='text-xs font-medium leading-none'>
-                                          {operator.profile.nickname}
-                                        </p>
-                                        <p className='text-xs text-muted-foreground'>
-                                          {` ${operator.profile.phone} - Loader`}
-                                        </p>
-                                      </div>
-                                      <div className='flex space-x-2'>
-                                        <div className='flex gap-1 items-center p-2 rounded-sm border border-red-500 text-xs font-semibold text-red-500'>
-                                          <BadgeAlert size={16} />
-                                          <span>{operator.status}</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </DrawerContent>
-                  </Drawer>
+                  <OptCell data={data} />
                 </TableCell>
                 <TableCell>
                   {data.capacity
                     .toString()
                     .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                 </TableCell>
-                <TableCell className='capitalize'>
+                <TableCell className='capitalize text-nowrap'>
                   {data.loading_point}
                 </TableCell>
-                <TableCell>
-                  {moment(data.start_date).format("DD MMM YYYY")}
+                <TableCell className='text-center text-nowrap'>
+                  {moment(data.start_date, "YYYY/MM/DD HH:mm:ss").format(
+                    "DD MMM YYYY HH:mm"
+                  )}
+                </TableCell>
+                <TableCell className='text-center text-nowrap'>
+                  {data.end_date
+                    ? moment(data.end_date, "YYYY/MM/DD HH:mm:ss").format(
+                        "DD MMM YYYY HH:mm"
+                      )
+                    : "-"}
+                </TableCell>
+                <TableCell className='text-center text-nowrap'>
+                  1 Hari
                 </TableCell>
                 <TableCell>
-                  {moment(data.end_date).format("DD MMM YYYY")}
+                  <FuelCell data={data} editable={false} />
                 </TableCell>
-                <TableCell>1 Hari</TableCell>
                 <TableCell>
                   <Badge
                     className={`capitalize ${
@@ -231,29 +190,58 @@ const OptTable = async ({
                   </Badge>
                 </TableCell>
                 <TableCell className='text-right'>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant='ghost'
-                        className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'>
-                        <MoreHorizontal />
-                        <span className='sr-only'>Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align='end' className='w-[160px]'>
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Make a copy</DropdownMenuItem>
-                      <DropdownMenuItem>Favorite</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DeleteButton id={data.id} />
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className='flex justify-end items-center gap-2'>
+                    <Button
+                      variant='ghost'
+                      className='flex h-6 w-6 p-0 data-[state=open]:bg-muted'
+                      onClick={() => {
+                        const edit = {
+                          id: data.id,
+                          name: data.name,
+                          start_date: moment(
+                            data.start_date,
+                            "YYYY-MM-DD HH:mm:ss"
+                          ).toDate(),
+                          pbm: data.pbm,
+                          foreman: data.foreman ?? "",
+                          mechanic: data.mechanic ?? "",
+                          loader: data.loader?.toString() ?? "",
+                          dozer: data.dozer?.toString() ?? "",
+                          muatan: data.capacity?.toString() ?? "",
+                          posisi: data.loading_point,
+                          end_date: data.end_date
+                            ? moment(
+                                data.end_date,
+                                "YYYY-MM-DD HH:mm:ss"
+                              ).toDate()
+                            : undefined,
+                        };
+                        handleEdit(edit);
+                      }}>
+                      <Pencil />
+                    </Button>
+                    <AddFuel id={data.id} />
+                    <Button
+                      onClick={() =>
+                        updateSts.mutate({ id: data.id, status: "done" })
+                      }
+                      variant='default'
+                      className='flex h-6 w-6 p-0 data-[state=open]:bg-muted bg-blue-500'>
+                      <CheckCircle />
+                    </Button>
+                    <Button
+                      onClick={() => deleteMutation.mutate(data.id)}
+                      variant='destructive'
+                      className='flex h-6 w-6 p-0 data-[state=open]:bg-muted'>
+                      <Trash />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={10} className='h-24 text-center'>
+              <TableCell colSpan={11} className='h-24 text-center'>
                 No results.
               </TableCell>
             </TableRow>
@@ -262,11 +250,17 @@ const OptTable = async ({
       </Table>
       <div className='flex justify-between items-center border-t border-gray-200 py-4'>
         <p>
-          Showing {(currentPage - 1) * 20 + operator.length} of {totalData}{" "}
-          results
+          {((operator?.currentPage || 0) - 1) * 20 +
+            (operator?.data?.length || 0)}{" "}
+          of {operator?.totalData} data
         </p>
-        <Pagination currentPage={currentPage} totalPage={totalPage} />
+        <Pagination
+          currentPage={operator?.currentPage || 0}
+          totalPage={operator?.totalPage || 0}
+        />
       </div>
+
+      <VesselFormEdit data={dataEdit} open={open} setOpen={setOpen} />
     </>
   );
 };

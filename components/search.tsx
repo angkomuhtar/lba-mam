@@ -8,6 +8,7 @@ const Search = () => {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+  const defaultSearch = searchParams.get("query") || "";
 
   const handleSearch = useDebouncedCallback((value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -23,6 +24,7 @@ const Search = () => {
     <Input
       placeholder='Search'
       className='max-w-xs'
+      defaultValue={defaultSearch}
       onChange={(e) => handleSearch(e.target.value)}
     />
   );

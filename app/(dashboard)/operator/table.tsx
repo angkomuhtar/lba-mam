@@ -1,3 +1,4 @@
+"use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,51 +17,22 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { findMany } from "@/lib/action/data";
 import { MoreHorizontal } from "lucide-react";
 import moment from "moment";
 import React from "react";
 import Pagination from "@/components/pagination";
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { fetchOpt } from "@/lib/hooks";
 
-const OptTable = async ({
-  search = "",
-  page = 1,
-}: {
-  search?: string;
-  page?: number;
-}) => {
-  const {
-    data: operator,
-    totalData,
-    currentPage,
-    totalPage,
-  } = await findMany({
-    where: {
-      AND: [
-        {
-          fullname: {
-            contains: search,
-          },
-        },
-        {
-          OR: [
-            {
-              type: {
-                contains: "L",
-              },
-            },
-            {
-              type: {
-                contains: "D",
-              },
-            },
-          ],
-        },
-      ],
-    },
-    orderBy: {},
-    page: page,
-    perPage: 20,
+const OptTable = () => {
+  const perPage = "15";
+  const searchParams = useSearchParams();
+  const page = searchParams.get("page") || "1";
+  const search = searchParams.get("query") || "";
+  const { data: operator } = useQuery({
+    queryKey: ["operator", { page, search, perPage }],
+    queryFn: fetchOpt,
   });
 
   return (
@@ -78,8 +50,8 @@ const OptTable = async ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {operator.length > 0 ? (
-            operator.map((data) => (
+          {operator?.data ? (
+            operator.data.map((data) => (
               <TableRow key={data.id} className='hover:bg-gray-100'>
                 <TableCell className='font-medium'>{data.fullname}</TableCell>
                 <TableCell>{data.nickname}</TableCell>
@@ -135,10 +107,14 @@ const OptTable = async ({
       </Table>
       <div className='flex justify-between items-center border-t border-gray-200 py-4'>
         <p>
-          Showing {(currentPage - 1) * 20 + operator.length} of {totalData}{" "}
-          results
+          {((operator?.currentPage || 0) - 1) * parseInt(perPage) +
+            (operator?.data?.length || 0)}{" "}
+          of {operator?.totalData} data
         </p>
-        <Pagination currentPage={currentPage} totalPage={totalPage} />
+        <Pagination
+          currentPage={operator?.currentPage || 0}
+          totalPage={operator?.totalPage || 0}
+        />
       </div>
     </>
   );

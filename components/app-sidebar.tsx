@@ -73,7 +73,7 @@ const data = {
     },
     {
       title: "Vessel Operator",
-      url: "/ves-opt",
+      url: "/vesopt",
       icon: Bot,
       items: [
         {

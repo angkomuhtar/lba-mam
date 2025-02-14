@@ -12,8 +12,9 @@ import {
   FormLabel,
   FormMessage,
 } from "./ui/form";
-import { VesselFormSchema } from "@/lib/zod";
+import { VesselUpdateSchema } from "@/lib/zod";
 import { useToast } from "@/hooks/use-toast";
+import moment from "moment";
 import {
   Select,
   SelectContent,
@@ -31,52 +32,53 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
-import { storeVessel } from "@/lib/action/data";
-import { useState } from "react";
+import { updateVessel } from "@/lib/action/data";
+import { useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DateTimePicker } from "./date-timepicker";
 
-const addShip = async (data: z.infer<typeof VesselFormSchema>) => {
-  try {
-    const response = await storeVessel(data);
-    return response;
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-export default function VesselForm() {
-  const [open, setOpen] = useState(false);
+export default function VesselFormEdit({
+  data,
+  open,
+  setOpen,
+}: {
+  data: z.infer<typeof VesselUpdateSchema>;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof VesselFormSchema>>({
-    resolver: zodResolver(VesselFormSchema),
-    defaultValues: {
-      name: "",
-      mechanic: "",
-      pbm: "",
-      foreman: "",
-      dozer: "",
-      loader: "",
-      muatan: "",
-      start_date: undefined,
-      end_date: undefined,
-      posisi: "",
-    },
+  const form = useForm<z.infer<typeof VesselUpdateSchema>>({
+    resolver: zodResolver(VesselUpdateSchema),
   });
+
+  useEffect(() => {
+    form.reset({
+      id: data.id,
+      name: data.name,
+      pbm: data.pbm,
+      mechanic: data.mechanic ?? undefined,
+      foreman: data.foreman ?? undefined,
+      dozer: data.dozer ? data.dozer : "",
+      loader: data.loader ? data.loader : "",
+      muatan: data.muatan ? data.muatan.toString() : "0",
+      start_date: moment(data.start_date).toDate() ?? undefined,
+      end_date: !data.end_date ? undefined : moment(data.end_date).toDate(),
+      posisi: data.posisi,
+    });
+  }, [data]);
+
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: addShip,
+    mutationFn: updateVessel,
     onSuccess: (res) => {
-      // console.log(res);
       if (res?.success) {
         queryClient.invalidateQueries({ queryKey: ["ships"] });
         form.reset();
         setOpen(false);
         toast({
           title: "Success",
-          description: "data berhasil disimpan",
+          description: "data berhasil diupdate",
         });
       } else {
         toast({
@@ -86,22 +88,22 @@ export default function VesselForm() {
         });
       }
     },
+    onError: (err) => {
+      console.log(err);
+    },
   });
 
-  const onSubmit = async (values: z.infer<typeof VesselFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof VesselUpdateSchema>) => {
     mutation.mutate(values);
   };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant='outline'>Tambah Data</Button>
-      </SheetTrigger>
       <SheetContent side='bottom' className='overflow-auto'>
         <div className='max-w-4xl mx-auto'>
           <SheetHeader>
-            <SheetTitle>Tambah Data</SheetTitle>
-            <SheetDescription>Tambah data vessel baru</SheetDescription>
+            <SheetTitle>Edit Data</SheetTitle>
+            <SheetDescription>Edit data vessel</SheetDescription>
           </SheetHeader>
           <div className='py-4 my-2'>
             <Form {...form}>
@@ -212,6 +214,24 @@ export default function VesselForm() {
                   />
                   <FormField
                     control={form.control}
+                    name='end_date'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tanggal Selesai</FormLabel>
+                        <FormControl>
+                          <DateTimePicker
+                            value={field.value}
+                            onChange={(dat) => {
+                              field.onChange(dat);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name='posisi'
                     render={({ field }) => (
                       <FormItem>
@@ -284,7 +304,7 @@ export default function VesselForm() {
                 <Button
                   onClick={form.handleSubmit(onSubmit)}
                   disabled={mutation?.isPending}>
-                  {`${mutation.isPending ? "Saving..." : "Simpan"}`}
+                  {`${mutation.isPending ? "Saving..." : "Update"}`}
                 </Button>
               </div>
             </SheetClose>
@@ -292,27 +312,5 @@ export default function VesselForm() {
         </div>
       </SheetContent>
     </Sheet>
-    // <Card className='w-full'>
-    //   <CardHeader className='flex flex-row justify-between items-center'>
-    //     <div className='flex flex-col items-center gap-2'>
-    //       <CardTitle>Tambah Vessel</CardTitle>
-    //       <CardDescription className='capitalize'>
-    //         tambah data vessel baru
-    //       </CardDescription>
-    //     </div>
-    //     {/* <Button variant='default'>Tambah</Button> */}
-    //   </CardHeader>
-    //   <CardContent>
-
-    //   </CardContent>
-    //   <CardFooter className='flex justify-end gap-5 border-t border-gray-200 pt-5'>
-    //     <Button variant='outline' asChild>
-    //       <Link href='/vessels'>Cancel</Link>
-    //     </Button>
-    //     <Button onClick={form.handleSubmit(onSubmit)} disabled={loading}>
-    //       {`${loading ? "Saving..." : "Simpan"}`}
-    //     </Button>
-    //   </CardFooter>
-    // </Card>
   );
 }

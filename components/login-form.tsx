@@ -43,13 +43,12 @@ export function LoginForm({
         });
       }
     } catch (error) {
-      console.log("ini error dari login form", error);
-
-      // toast({
-      //   title: "Ohh no!, Something went wrong",
-      //   description: "Please try again later",
-      //   variant: "destructive",
-      // });
+      console.log("Error Logs", error);
+      toast({
+        title: "Ohh no!, Something went wrong",
+        description: "Please try again later",
+        variant: "destructive",
+      });
     }
   };
 

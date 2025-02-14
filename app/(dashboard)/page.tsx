@@ -1,4 +1,7 @@
 import AppBreadcrumb from "@/components/app-breadcrumb";
+import CardCount from "@/components/card-count";
+import CardOptList from "@/components/card-opt-list";
+import CardShipList from "@/components/card-ship-list";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,10 +13,14 @@ export default function Home() {
   return (
     <main>
       <AppBreadcrumb item={[]} />
-      <div className='flex flex-1 flex-col gap-4 p-4'>
-        <div className='min-h-[100vh] flex-1 rounded-xl md:min-h-min'>
-          <div className='flex items-center gap-2 px-2 py-4'>
-            <h1 className='text-lg font-semibold'>Daftar Vessel</h1>
+      <div className='min-h-[100vh] flex-1 rounded-xl md:min-h-min'>
+        <div className='grid grid-cols-5 py-6 px-4 gap-6'>
+          <div className='col-span-3 grid grid-cols-3 gap-6 self-start'>
+            <CardCount />
+            <CardShipList />
+          </div>
+          <div className='col-span-2'>
+            <CardOptList />
           </div>
         </div>
       </div>

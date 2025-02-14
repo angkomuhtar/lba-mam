@@ -24,41 +24,53 @@ model Profile {
 }
 
 model Ship {
-  id            String          @id @default(cuid())
-  name          String
-  start_date    DateTime
-  end_date      DateTime
-  capacity      Int             @default(0)
-  loading_point String
-  pbm           String
-  foreman       String?
-  mechanic      String?
-  loader        String?
-  dozer         String?
-  status        String          @default("loading")
-  Ship_operator Ship_operator[]
+  id               String             @id @default(cuid())
+  name             String
+  start_date       String
+  end_date         String?            @default("")
+  capacity         Int                @default(0)
+  loading_point    String
+  pbm              String
+  foreman          String?
+  mechanic         String?
+  loader           String?
+  dozer            String?
+  status           String             @default("loading")
+  Ship_operator    Ship_operator[]
+  fuel_consumption Fuel_consumption[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Ship_operator {
-  id        String  @id @default(cuid())
-  isrental  Boolean @default(false)
+  id        String   @id @default(cuid())
+  isrental  Boolean  @default(false)
   type      String
   shipId    String
-  profileId String
+  profileId String?
   nama      String?
   phone     String?
-  status    String  @default("pending")
-  profile   Profile @relation(fields: [profileId], references: [id])
-  ship      Ship    @relation(fields: [shipId], references: [id])
+  status    String   @default("pending")
+  profile   Profile? @relation(fields: [profileId], references: [id])
+  ship      Ship     @relation(fields: [shipId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([profileId], map: "Ship_operator_profileId_fkey")
   @@index([shipId], map: "Ship_operator_shipId_fkey")
+}
+
+model Fuel_consumption {
+  id         String   @id @default(cuid())
+  shipId     String
+  fuel_usage Int
+  date       DateTime
+  ship       Ship     @relation(fields: [shipId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {

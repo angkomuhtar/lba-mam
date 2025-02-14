@@ -15,11 +15,7 @@ export const loginAction = async ({
       password,
     });
   } catch (error) {
-    // console.log("ini error dari authAction", error);
-
     if (error instanceof AuthError) {
-      console.log("ini error dari authAction", error);
-
       switch (error.type) {
         case "CredentialsSignin":
           return { message: "Invalid credentials" };

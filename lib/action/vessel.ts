@@ -7,7 +7,7 @@ import { prisma } from "../prisma";
 export const vesselAction = async (
   values: z.infer<typeof VesselFormSchema>
 ) => {
-  const dozer = await prisma.profile.findMany({
+  await prisma.profile.findMany({
     where: {
       AND: [
         {
@@ -30,8 +30,8 @@ export const vesselAction = async (
       foreman: values.foreman,
       dozer: values.dozer,
       loader: values.loader,
-      start_date: values.start_date,
-      end_date: values.end_date,
+      start_date: values.start_date.toString(),
+      end_date: values.end_date?.toString(),
       loading_point: values.posisi,
       capacity: parseInt(values.muatan),
       status: "pending",
