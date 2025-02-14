@@ -11,6 +11,23 @@ import path from "path";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  const response = NextResponse.next();
+
+  response.headers.set(
+    "Access-Control-Allow-Origin",
+    "https://lba.mitraabadimahakam.id"
+  );
+  response.headers.set(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE"
+  );
+  response.headers.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  response.headers.set("Access-Control-Allow-Credentials", "true");
+
+  // return response;
   // Allow access to the signin page
   const session = await getToken({ req, secret: process.env.AUTH_SECRET });
   if (pathname === "/signin") {
