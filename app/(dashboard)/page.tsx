@@ -14,12 +14,12 @@ export default function Home() {
     <main>
       <AppBreadcrumb item={[]} />
       <div className='min-h-[100vh] flex-1 rounded-xl md:min-h-min'>
-        <div className='grid grid-cols-5 py-6 px-4 gap-6'>
-          <div className='col-span-3 grid grid-cols-3 gap-6 self-start'>
+        <div className='grid grid-cols-3 lg:grid-cols-5 py-6 px-4 gap-6'>
+          <div className='col-span-3 grid grid-cols-1 gap-y-3'>
             <CardCount />
             <CardShipList />
           </div>
-          <div className='col-span-2'>
+          <div className='col-span-3 lg:col-span-2'>
             <CardOptList />
           </div>
         </div>

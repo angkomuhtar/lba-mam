@@ -289,6 +289,265 @@ export async function addFuel(data: z.infer<typeof FuelFormSchema>) {
   }
 }
 
+export async function getVesDash({ page }: { page: number }) {
+  const where = {
+    OR: [
+      {
+        status: "created",
+      },
+      {
+        status: "onboard",
+      },
+    ],
+  };
+  const data = await prisma.ship.findMany({
+    where,
+    include: {
+      Ship_operator: {
+        where: {
+          status: {
+            not: "cancel",
+          },
+        },
+        select: {
+          id: true,
+          type: true,
+          isrental: true,
+          nama: true,
+          phone: true,
+          status: true,
+          profile: {
+            select: {
+              nickname: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      fuel_consumption: {
+        select: {
+          id: true,
+          fuel_usage: true,
+          date: true,
+          shipId: true,
+        },
+        orderBy: {
+          date: "asc",
+        },
+      },
+    },
+    take: 10,
+    skip: (page - 1) * 10,
+  });
+
+  const dataCount = await prisma.profile.count({ where });
+
+  return {
+    success: true,
+    data: data,
+    totalData: dataCount,
+    currentPage: page,
+    totalPage: Math.ceil(dataCount / 10),
+  };
+}
+
+export async function getDashCount() {
+  const shipPreCount = await prisma.ship.count({
+    where: { status: "created" },
+  });
+  const shipBoardCount = await prisma.ship.count({
+    where: { status: "onboard" },
+  });
+  const opStandBy = await prisma.profile.count({
+    where: { status: "ready" },
+  });
+  const opTotal = await prisma.profile.count();
+  return {
+    success: true,
+    onboard: shipBoardCount,
+    prepare: shipPreCount,
+    opt: opStandBy,
+    optTotal: opTotal,
+  };
+}
+
+export async function updateStatusShip(
+  id: string,
+  status: string,
+  end_date?: Date
+) {
+  try {
+    const oplist = await prisma.ship_operator.findMany({
+      where: {
+        shipId: id,
+        status: {
+          not: "cancel",
+        },
+        isrental: false,
+      },
+    });
+    const operator = [...oplist.map((op) => op.profileId)].filter(
+      (id): id is string => id !== undefined
+    );
+
+    console.log(id, status, end_date, operator);
+
+    const data =
+      status === "done"
+        ? {
+            status: "ready",
+            last_work: end_date ? new Date(end_date) : undefined,
+          }
+        : {
+            status: status,
+          };
+    const update = await prisma.profile.updateMany({
+      where: {
+        id: {
+          in: operator,
+        },
+      },
+      data: data,
+    });
+
+    await prisma.ship.update({
+      where: {
+        id,
+      },
+      data: {
+        status: status,
+        end_date: end_date
+          ? moment(end_date).format("YYYY-MM-DD HH:mm:ss.000")
+          : "",
+      },
+    });
+
+    return { success: true, data: update, message: "Data berhasil Diupdate" };
+  } catch (error) {
+    return { success: false, data: error };
+  }
+}
+
+// operator Action
+export async function getOperator({
+  page,
+  search,
+  perPage,
+}: {
+  page: number;
+  search: string;
+  perPage: number;
+}) {
+  const where = {
+    AND: [
+      {
+        OR: [
+          {
+            fullname: {
+              contains: search,
+            },
+          },
+          {
+            nickname: {
+              contains: search,
+            },
+          },
+        ],
+      },
+      {
+        OR: [
+          {
+            type: {
+              contains: "D",
+            },
+          },
+          {
+            type: {
+              contains: "L",
+            },
+          },
+        ],
+      },
+    ],
+  };
+  const data = await prisma.profile.findMany({
+    where,
+    orderBy: {
+      last_work: "asc",
+    },
+    take: perPage,
+    skip: (page - 1) * perPage,
+  });
+
+  const dataCount = await prisma.profile.count({ where });
+
+  return {
+    success: true,
+    data: {
+      data,
+      totalData: dataCount,
+      currentPage: page,
+      totalPage: Math.ceil(dataCount / perPage),
+    },
+  };
+}
+
+export async function getOperatorSearch({
+  page,
+  search,
+  perPage,
+  type,
+}: {
+  page: number;
+  search: string;
+  perPage: number;
+  type: string;
+}) {
+  const where = {
+    AND: [
+      {
+        OR: [
+          {
+            fullname: {
+              contains: search,
+            },
+          },
+          {
+            nickname: {
+              contains: search,
+            },
+          },
+        ],
+      },
+      {
+        type: {
+          contains: type,
+        },
+      },
+      {
+        status: "ready",
+      },
+    ],
+  };
+  const data = await prisma.profile.findMany({
+    where,
+    take: perPage,
+    skip: (page - 1) * perPage,
+  });
+
+  const dataCount = await prisma.profile.count({ where });
+
+  return {
+    success: true,
+    data: {
+      data,
+      totalData: dataCount,
+      currentPage: page,
+      totalPage: Math.ceil(dataCount / perPage),
+    },
+  };
+}
+
 export async function getShipOperator(id: string) {
   const data = await prisma.ship.findUnique({
     where: {
@@ -453,6 +712,9 @@ export async function getOptReady({ page = 1 }: { page: number }) {
   };
   const data = await prisma.profile.findMany({
     where,
+    orderBy: {
+      last_work: "asc",
+    },
     take: 8,
     skip: (page - 1) * 8,
   });
@@ -463,243 +725,5 @@ export async function getOptReady({ page = 1 }: { page: number }) {
     success: true,
     data,
     totalPage: Math.ceil(dataCount / 8),
-  };
-}
-
-export async function updateStatusShip(id: string, status: string) {
-  try {
-    const oplist = await prisma.ship_operator.findMany({
-      where: {
-        shipId: id,
-        status: {
-          not: "cancel",
-        },
-        isrental: false,
-      },
-    });
-    const operator = [...oplist.map((op) => op.profileId)].filter(
-      (id): id is string => id !== undefined
-    );
-    const update = await prisma.profile.updateMany({
-      where: {
-        id: {
-          in: operator,
-        },
-      },
-      data: {
-        status: status === "done" ? "ready" : status,
-      },
-    });
-
-    await prisma.ship.update({
-      where: {
-        id,
-      },
-      data: {
-        status: status,
-      },
-    });
-
-    return { success: true, data: update, message: "Data berhasil Diupdate" };
-  } catch (error) {
-    return { success: false, data: error };
-  }
-}
-
-export async function getOperator({
-  page,
-  search,
-  perPage,
-}: {
-  page: number;
-  search: string;
-  perPage: number;
-}) {
-  const where = {
-    AND: [
-      {
-        OR: [
-          {
-            fullname: {
-              contains: search,
-            },
-          },
-          {
-            nickname: {
-              contains: search,
-            },
-          },
-        ],
-      },
-      {
-        OR: [
-          {
-            type: {
-              contains: "D",
-            },
-          },
-          {
-            type: {
-              contains: "L",
-            },
-          },
-        ],
-      },
-    ],
-  };
-  const data = await prisma.profile.findMany({
-    where,
-    take: perPage,
-    skip: (page - 1) * perPage,
-  });
-
-  const dataCount = await prisma.profile.count({ where });
-
-  return {
-    success: true,
-    data: {
-      data,
-      totalData: dataCount,
-      currentPage: page,
-      totalPage: Math.ceil(dataCount / perPage),
-    },
-  };
-}
-
-export async function getOperatorSearch({
-  page,
-  search,
-  perPage,
-  type,
-}: {
-  page: number;
-  search: string;
-  perPage: number;
-  type: string;
-}) {
-  const where = {
-    AND: [
-      {
-        OR: [
-          {
-            fullname: {
-              contains: search,
-            },
-          },
-          {
-            nickname: {
-              contains: search,
-            },
-          },
-        ],
-      },
-      {
-        type: {
-          contains: type,
-        },
-      },
-      {
-        status: "ready",
-      },
-    ],
-  };
-  const data = await prisma.profile.findMany({
-    where,
-    take: perPage,
-    skip: (page - 1) * perPage,
-  });
-
-  const dataCount = await prisma.profile.count({ where });
-
-  return {
-    success: true,
-    data: {
-      data,
-      totalData: dataCount,
-      currentPage: page,
-      totalPage: Math.ceil(dataCount / perPage),
-    },
-  };
-}
-
-export async function getVesDash({ page }: { page: number }) {
-  const where = {
-    OR: [
-      {
-        status: "created",
-      },
-      {
-        status: "onboard",
-      },
-    ],
-  };
-  const data = await prisma.ship.findMany({
-    where,
-    include: {
-      Ship_operator: {
-        where: {
-          status: {
-            not: "cancel",
-          },
-        },
-        select: {
-          id: true,
-          type: true,
-          isrental: true,
-          nama: true,
-          phone: true,
-          status: true,
-          profile: {
-            select: {
-              nickname: true,
-              phone: true,
-            },
-          },
-        },
-      },
-      fuel_consumption: {
-        select: {
-          id: true,
-          fuel_usage: true,
-          date: true,
-          shipId: true,
-        },
-        orderBy: {
-          date: "asc",
-        },
-      },
-    },
-    take: 10,
-    skip: (page - 1) * 10,
-  });
-
-  const dataCount = await prisma.profile.count({ where });
-
-  return {
-    success: true,
-    data: data,
-    totalData: dataCount,
-    currentPage: page,
-    totalPage: Math.ceil(dataCount / 10),
-  };
-}
-
-export async function getDashCount() {
-  const shipPreCount = await prisma.ship.count({
-    where: { status: "created" },
-  });
-  const shipBoardCount = await prisma.ship.count({
-    where: { status: "onboard" },
-  });
-  const opStandBy = await prisma.profile.count({
-    where: { status: "ready" },
-  });
-  const opTotal = await prisma.profile.count();
-  return {
-    success: true,
-    onboard: shipBoardCount,
-    prepare: shipPreCount,
-    opt: opStandBy,
-    optTotal: opTotal,
   };
 }

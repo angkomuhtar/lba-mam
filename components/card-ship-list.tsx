@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { ChevronLeft, ChevronRight, Ship } from "lucide-react";
-import moment from "moment";
+import moment from "moment-timezone";
 import { Button } from "./ui/button";
 import { FuelCell, OptCell } from "./cells";
 
@@ -14,6 +14,8 @@ const CardShipList = () => {
     queryKey: ["shipDash"],
     queryFn: () => getVesDash({ page: shipPage }),
   });
+  moment.tz.setDefault("Asia/Makassar");
+  moment.locale("id");
 
   return (
     <Card className='py-4 px-0 shadow-md bg-white col-span-3'>
@@ -25,7 +27,7 @@ const CardShipList = () => {
           </p>
         </div>
         <div className='grid gap-4 overflow-y-auto max-h-96 px-4'>
-          {ship?.data ? (
+          {ship?.data?.length ? (
             ship?.data?.map((d) => (
               <div
                 className='flex justify-between items-center space-x-4'
@@ -33,8 +35,10 @@ const CardShipList = () => {
                 <div className='bg-gray-600 text-white rounded-full p-2'>
                   <Ship />
                 </div>
-                <div className='flex-1'>
-                  <h3 className='font-semibold text-xs uppercase'>{d.name}</h3>
+                <div className='flex-1 text-nowrap'>
+                  <h3 className='font-semibold text-xs uppercase text-nowrap'>
+                    {d.name}
+                  </h3>
                   <p className='text-xs'>
                     {d.capacity} - {d.pbm}
                   </p>
@@ -51,37 +55,39 @@ const CardShipList = () => {
                   <span className='text-xs font-semibold text-slate-500'>
                     Tanggal Mulai
                   </span>
-                  <h3 className='text-xs'>
+                  <h3 className='text-xs text-nowrap'>
                     {moment(d.start_date).format("dddd, DD MMM YYYY")}
                   </h3>
                 </div>
               </div>
             ))
           ) : (
-            <h3>nodata </h3>
+            <h3 className='text-center'>Belum Ada Data Vessel saat ini </h3>
           )}
         </div>
       </CardContent>
-      <CardFooter className='flex justify-end space-x-4'>
-        <Button
-          variant='outline'
-          onClick={() => {
-            setOptPage(shipPage - 1);
-            refetchShip();
-          }}
-          disabled={shipPage === 1}>
-          <ChevronLeft />
-        </Button>
-        <Button
-          variant='outline'
-          onClick={() => {
-            setOptPage(shipPage + 1);
-            refetchShip();
-          }}
-          disabled={(ship?.totalPage ?? 0) <= shipPage}>
-          <ChevronRight />
-        </Button>
-      </CardFooter>
+      {ship?.data?.length ? (
+        <CardFooter className='flex justify-end space-x-4'>
+          <Button
+            variant='outline'
+            onClick={() => {
+              setOptPage(shipPage - 1);
+              refetchShip();
+            }}
+            disabled={shipPage === 1}>
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() => {
+              setOptPage(shipPage + 1);
+              refetchShip();
+            }}
+            disabled={(ship?.totalPage ?? 0) <= shipPage}>
+            <ChevronRight />
+          </Button>
+        </CardFooter>
+      ) : null}
     </Card>
   );
 };

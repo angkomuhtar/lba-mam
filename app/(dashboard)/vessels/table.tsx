@@ -8,7 +8,7 @@ import {
   TableBody,
   TableHead,
   TableCell,
-} from "@/components/ui/table";
+} from "@/components/ui/table-cell";
 import { CheckCircle, Pencil, Trash } from "lucide-react";
 import moment from "moment";
 import React, { useState } from "react";
@@ -20,7 +20,8 @@ import { FuelCell, OptCell } from "../../../components/cells";
 import AddFuel from "@/components/add-fuel";
 import { useSearchParams } from "next/navigation";
 import VesselFormEdit from "@/components/vessel-form-edit";
-import { updateStatusShip } from "@/lib/action/data";
+import VesselFormDone from "@/components/vessel-form-done";
+import { dateToDay } from "@/lib/utils";
 
 type vessel = {
   id: string;
@@ -43,6 +44,8 @@ const OptTable = () => {
   const page = searchParams.get("page") || "1";
   const search = searchParams.get("query") || "";
   const [open, setOpen] = useState(false);
+  const [done, setDone] = useState(false);
+  const [doneId, setDoneId] = useState("");
   const [dataEdit, setDataEdit] = useState<
     Omit<vessel, "start_date" | "end_date"> & {
       start_date: Date;
@@ -67,8 +70,6 @@ const OptTable = () => {
     queryFn: fetchShips,
   });
 
-  const queryClient = useQueryClient();
-
   const deleteMutation = useMutation({
     mutationFn: delVessel,
     onSuccess: () => {
@@ -80,27 +81,6 @@ const OptTable = () => {
     },
   });
 
-  const updateSts = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      updateStatusShip(id, status),
-    onSuccess: (data) => {
-      console.log(data);
-
-      if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ["ships"] });
-        toast({
-          title: "Success",
-          description: "data berhasil Di update",
-        });
-      } else {
-        toast({
-          title: "Error",
-          variant: "destructive",
-          description: "terjadi kesalahan saat update data",
-        });
-      }
-    },
-  });
   const handleEdit = (data: vessel) => {
     setDataEdit({
       id: data.id,
@@ -172,7 +152,10 @@ const OptTable = () => {
                     : "-"}
                 </TableCell>
                 <TableCell className='text-center text-nowrap'>
-                  1 Hari
+                  {dateToDay(
+                    moment(data.start_date).toDate(),
+                    data?.end_date ? moment(data.end_date).toDate() : new Date()
+                  )}
                 </TableCell>
                 <TableCell>
                   <FuelCell data={data} editable={false} />
@@ -184,6 +167,8 @@ const OptTable = () => {
                         ? "bg-blue-500"
                         : data.status === "onboard"
                         ? "bg-yellow-500"
+                        : data.status === "done"
+                        ? "bg-green-500"
                         : "bg-red-500"
                     }`}>
                     {data.status}
@@ -191,44 +176,49 @@ const OptTable = () => {
                 </TableCell>
                 <TableCell className='text-right'>
                   <div className='flex justify-end items-center gap-2'>
-                    <Button
-                      variant='ghost'
-                      className='flex h-6 w-6 p-0 data-[state=open]:bg-muted'
-                      onClick={() => {
-                        const edit = {
-                          id: data.id,
-                          name: data.name,
-                          start_date: moment(
-                            data.start_date,
-                            "YYYY-MM-DD HH:mm:ss"
-                          ).toDate(),
-                          pbm: data.pbm,
-                          foreman: data.foreman ?? "",
-                          mechanic: data.mechanic ?? "",
-                          loader: data.loader?.toString() ?? "",
-                          dozer: data.dozer?.toString() ?? "",
-                          muatan: data.capacity?.toString() ?? "",
-                          posisi: data.loading_point,
-                          end_date: data.end_date
-                            ? moment(
-                                data.end_date,
+                    {data.status !== "done" && (
+                      <>
+                        <Button
+                          variant='ghost'
+                          className='flex h-6 w-6 p-0 data-[state=open]:bg-muted'
+                          onClick={() => {
+                            const edit = {
+                              id: data.id,
+                              name: data.name,
+                              start_date: moment(
+                                data.start_date,
                                 "YYYY-MM-DD HH:mm:ss"
-                              ).toDate()
-                            : undefined,
-                        };
-                        handleEdit(edit);
-                      }}>
-                      <Pencil />
-                    </Button>
-                    <AddFuel id={data.id} />
-                    <Button
-                      onClick={() =>
-                        updateSts.mutate({ id: data.id, status: "done" })
-                      }
-                      variant='default'
-                      className='flex h-6 w-6 p-0 data-[state=open]:bg-muted bg-blue-500'>
-                      <CheckCircle />
-                    </Button>
+                              ).toDate(),
+                              pbm: data.pbm,
+                              foreman: data.foreman ?? "",
+                              mechanic: data.mechanic ?? "",
+                              loader: data.loader?.toString() ?? "",
+                              dozer: data.dozer?.toString() ?? "",
+                              muatan: data.capacity?.toString() ?? "",
+                              posisi: data.loading_point,
+                              end_date: data.end_date
+                                ? moment(
+                                    data.end_date,
+                                    "YYYY-MM-DD HH:mm:ss"
+                                  ).toDate()
+                                : undefined,
+                            };
+                            handleEdit(edit);
+                          }}>
+                          <Pencil />
+                        </Button>
+                        <AddFuel id={data.id} />
+                        <Button
+                          onClick={() => {
+                            setDoneId(data.id);
+                            setDone(true);
+                          }}
+                          variant='default'
+                          className='flex h-6 w-6 p-0 data-[state=open]:bg-muted bg-blue-500'>
+                          <CheckCircle />
+                        </Button>
+                      </>
+                    )}
                     <Button
                       onClick={() => deleteMutation.mutate(data.id)}
                       variant='destructive'
@@ -261,6 +251,11 @@ const OptTable = () => {
       </div>
 
       <VesselFormEdit data={dataEdit} open={open} setOpen={setOpen} />
+      <VesselFormDone
+        data={{ id: doneId, end_date: new Date() }}
+        open={done}
+        setOpen={setDone}
+      />
     </>
   );
 };

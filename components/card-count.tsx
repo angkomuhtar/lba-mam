@@ -11,7 +11,7 @@ const CardCount = () => {
     queryFn: getDashCount,
   });
   return (
-    <>
+    <div className='w-full grid md:grid-cols-2 lg:grid-cols-3 gap-4'>
       <Card className='py-4 px-3 shadow-md bg-white'>
         <CardContent className='grid py-3 px-2 gap-3'>
           <div className='text-white bg-green-500 rounded-lg p-4 justify-self-start'>
@@ -75,7 +75,7 @@ const CardCount = () => {
           </div>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 };
 
