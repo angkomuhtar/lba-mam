@@ -71,12 +71,14 @@ export default function VesselFormDone({
         toast({
           title: "Success",
           description: "data berhasil Di update",
+          duration: 1500,
         });
       } else {
         toast({
           title: "Error",
           variant: "destructive",
           description: "terjadi kesalahan saat update data",
+          duration: 1500,
         });
       }
     },

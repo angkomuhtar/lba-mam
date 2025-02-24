@@ -43,6 +43,7 @@ const AddOptDialog = ({
       toast({
         title: "Success",
         description: "data berhasil disimpan",
+        duration: 1500,
       });
     },
   });

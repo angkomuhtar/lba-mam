@@ -77,6 +77,7 @@ const OptTable = () => {
       toast({
         title: "Success",
         description: "data berhasil dihapus",
+        duration: 1500,
       });
     },
   });
@@ -103,6 +104,7 @@ const OptTable = () => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>No</TableHead>
             <TableHead>Nama Vessel</TableHead>
             <TableHead>Mekanik</TableHead>
             <TableHead>PBM</TableHead>
@@ -120,8 +122,11 @@ const OptTable = () => {
         </TableHeader>
         <TableBody>
           {operator?.data && operator?.data?.length > 0 ? (
-            operator.data.map((data) => (
+            operator.data.map((data, index) => (
               <TableRow key={data.id} className='hover:bg-gray-100'>
+                <TableCell className='font-medium text-nowrap'>
+                  {(Number(page) - 1) * Number(perPage) + index + 1}
+                </TableCell>
                 <TableCell className='font-medium text-nowrap'>
                   {data.name}
                 </TableCell>

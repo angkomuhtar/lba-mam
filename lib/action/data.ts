@@ -289,6 +289,20 @@ export async function addFuel(data: z.infer<typeof FuelFormSchema>) {
   }
 }
 
+export async function removeFuel(id: string) {
+  try {
+    const data = await prisma.fuel_consumption.delete({
+      where: {
+        id,
+      },
+    });
+
+    return { success: true, data: data, message: "Data berhasil dihapus" };
+  } catch (error) {
+    return { success: false, data: error };
+  }
+}
+
 export async function getVesDash({ page }: { page: number }) {
   const where = {
     OR: [

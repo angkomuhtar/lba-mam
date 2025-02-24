@@ -53,6 +53,7 @@ const AddFuel = ({ id }: { id: string }) => {
       toast({
         title: "Success",
         description: "data berhasil disimpan",
+        duration: 1500,
       });
     },
   });

@@ -83,6 +83,7 @@ const OptList = ({ operator }: { operator: OptType }) => {
       toast({
         title: "Success",
         description: "data berhasil dihapus",
+        duration: 1500,
       });
     },
   });
@@ -117,6 +118,7 @@ const OptList = ({ operator }: { operator: OptType }) => {
       toast({
         title: "Success",
         description: "data berhasil disimpan",
+        duration: 1500,
       });
     },
   });
@@ -135,6 +137,7 @@ const OptList = ({ operator }: { operator: OptType }) => {
       toast({
         title: "Success",
         description: "data berhasil Di update",
+        duration: 1500,
       });
     },
   });

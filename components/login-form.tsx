@@ -18,6 +18,9 @@ import { LoginFormSchema } from "@/lib/zod";
 import { loginAction } from "@/lib/action/auth";
 import { useToast } from "@/hooks/use-toast";
 
+import Bg from "@/public/images/lba.png";
+import Image from "next/image";
+
 export function LoginForm({
   className,
   ...props
@@ -40,14 +43,16 @@ export function LoginForm({
           title: "Ohh no!, Something went wrong",
           description: result.message,
           variant: "destructive",
+          duration: 1500,
         });
       }
     } catch (error) {
-      console.log("Error Logs", error);
+      console.log(error);
       toast({
         title: "Ohh no!, Something went wrong",
         description: "Please try again later",
         variant: "destructive",
+        duration: 1500,
       });
     }
   };
@@ -142,12 +147,16 @@ export function LoginForm({
               </div>
             </form>
           </Form>
-          <div className='relative hidden bg-muted md:block'>
-            <img
-              src='/bg-login.jpg'
-              alt='Image'
-              className='absolute inset-0 h-full w-full object-cover'
-            />
+          <div className='relative hidden bg-muted md:flex justify-center items-center px-5'>
+            <div className='relative w-full aspect-video inset-0'>
+              <Image
+                src={Bg}
+                alt='Image'
+                fill
+                objectFit='contain'
+                className='absolute inset-0 h-full w-full object-cover'
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

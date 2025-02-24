@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +13,9 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { toast } from "@/hooks/use-toast";
+import { removeFuel } from "@/lib/action/data";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeAlert,
   CheckCheck,
@@ -19,6 +23,7 @@ import {
   HardHat,
   MessageCircleCode,
   RefreshCcw,
+  Trash2,
 } from "lucide-react";
 import moment from "moment";
 import React from "react";
@@ -205,6 +210,18 @@ export const FuelCell = ({
   data: Data;
   editable: boolean;
 }) => {
+  const QueryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: removeFuel,
+    onSuccess: () => {
+      QueryClient.invalidateQueries({ queryKey: ["ships"] });
+      toast({
+        title: "Success",
+        description: "data berhasil dihapus",
+        duration: 1500,
+      });
+    },
+  });
   return (
     <Drawer>
       <DrawerTrigger asChild>
@@ -238,28 +255,38 @@ export const FuelCell = ({
           </div>
           <div className='w-full grid gap-4 py-2 px-2'>
             <Card className='self-start'>
-              <CardContent className=''>
+              <CardContent className='p-2'>
                 {data.fuel_consumption.length <= 0 ? (
                   <div className='h-full w-full flex items-center justify-center pt-4'>
                     <h2 className='text-sm font-semibold'>Tidak ada data</h2>{" "}
                   </div>
                 ) : (
-                  <div className='w-full grid grid-cols-2 sm:grid-cols-3 gap-4'>
+                  <div className='w-full grid grid-cols-2 sm:grid-cols-3 gap-2 '>
                     {data.fuel_consumption.map((fuel, index) => {
                       return (
                         <div
-                          className=' flex items-center space-x-4 p-3'
+                          className=' flex items-center space-x-4 border border-gray-200 rounded-md p-2'
                           key={index}>
-                          <Fuel />
-                          <div className='flex-1 space-y-1'>
-                            <p className='text-xs font-medium leading-none'>
+                          <Fuel size={16} />
+                          <div className='flex-1'>
+                            <p className='text-[11px] font-bold leading-none'>
                               {fuel.fuel_usage} L
                             </p>
-                            <p className='text-xs text-muted-foreground'>
+                            <p className='text-[10px] text-muted-foreground'>
                               {moment(fuel.date).format("DD MMM YYYY")}
                             </p>
                           </div>
                           {editable && <></>}
+                          <div
+                            className='p-1 place-items-center group cursor-pointer'
+                            onClick={() => {
+                              deleteMutation.mutate(fuel.id);
+                            }}>
+                            <Trash2
+                              size={16}
+                              className='group-hover:text-red-500 '
+                            />
+                          </div>
                         </div>
                       );
                     })}

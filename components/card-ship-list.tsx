@@ -56,7 +56,10 @@ const CardShipList = () => {
                     Tanggal Mulai
                   </span>
                   <h3 className='text-xs text-nowrap'>
-                    {moment(d.start_date).format("dddd, DD MMM YYYY")}
+                    {moment(d.start_date)
+                      .locale("id")
+                      .tz("Asia/Makassar")
+                      .format("dddd, DD MMM YYYY")}
                   </h3>
                 </div>
               </div>

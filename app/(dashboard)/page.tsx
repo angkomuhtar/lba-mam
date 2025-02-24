@@ -15,7 +15,7 @@ export default function Home() {
       <AppBreadcrumb item={[]} />
       <div className='min-h-[100vh] flex-1 rounded-xl md:min-h-min'>
         <div className='grid grid-cols-3 lg:grid-cols-5 py-6 px-4 gap-6'>
-          <div className='col-span-3 grid grid-cols-1 gap-y-3'>
+          <div className='col-span-3 grid grid-cols-1 gap-y-3 self-start'>
             <CardCount />
             <CardShipList />
           </div>
