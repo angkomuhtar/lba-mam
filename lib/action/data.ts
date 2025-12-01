@@ -708,6 +708,11 @@ export async function getOptReady({ page = 1 }: { page: number }) {
       {
         status: "ready",
       },
+      // {
+      //   type:{
+      //     not: "Admin",
+      //   }
+      // }
       {
         OR: [
           {
